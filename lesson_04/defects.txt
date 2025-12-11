@@ -1,0 +1,114 @@
+Баг-репорт №1
+Заголовок: StringUtils.capitalize() поднимает AttributeError вместо TypeError для нестроковых аргументов.
+Описание: При передаче нестрокового значения метод capitalize() падает с AttributeError, хотя должен явно поднять TypeError.
+Шаги: 
+import pytest
+from string_utils import StringUtils
+@pytest.mark.parametrize(
+    "input_text, expected_output",
+    [
+        ("", ""),
+        ("123abc", "123abc"),
+    ],
+)
+def test_string_utils_capitalize_valid(input_text, expected_output):
+    utils = StringUtils()
+    assert utils.capitalize(input_text) == expected_output
+
+
+@pytest.mark.parametrize("invalid", [None, 123])
+def test_string_utils_capitalize_invalid(invalid):
+    with pytest.raises(TypeError):
+        StringUtils().capitalize(invalid)
+Ожидаемый результат:
+TypeError: Expected str, got NoneType
+Фактический результат:
+AttributeError: 'NoneType' object has no attribute 'capitalize'
+AttributeError: 'int' object has no attribute 'capitalize'
+Окружение: 
+Python 3.14.0
+pytest 9.0.1
+Серьезность: S2
+Приоритет: P1
+
+
+
+Баг-репорт №2
+Заголовок: При тестировании метод trim() не проверяет тип входного параметра и падает с AttributeError при передаче нестроковых значений.
+Шаги: 
+@pytest.mark.parametrize(
+    "invalid_input",
+    [
+        None,
+        123,
+        [],
+    ],
+)
+def test_string_utils_trim_invalid(invalid_input):
+    utils = StringUtils()
+    with pytest.raises(TypeError):
+        utils.trim(invalid_input)
+Ожидаемый результат: Метод поднимает TypeError с сообщением о том, что ожидается строка
+Фактический результат: 
+       AttributeError: 'NoneType' object has no attribute 'startswith'
+       AttributeError: 'int' object has no attribute 'startswith'
+       AttributeError: 'list' object has no attribute 'startswith'
+Окружение: 
+Python 3.14.0
+pytest 9.0.1
+Серьезность: S2
+Приоритет: P1
+
+
+
+Баг-репорт №3
+Заголовок: При тестировании метод contains() падает с AttributeError при передаче None вместо строки/символа, вместо ожидаемого TypeError.
+Шаги: 
+@pytest.mark.parametrize(
+    "string, symbol",
+    [
+        (None, "a"),          
+        ("abc", None),        
+        (None, None),         
+    ],
+)
+def test_string_utils_contains_invalid(string, symbol):
+    utils = StringUtils()
+    with pytest.raises(TypeError):
+        utils.contains(string, symbol)
+Ожидаемый результат: Метод поднимает TypeError с сообщением о том, что ожидается строка
+Фактический результат:
+           AttributeError: 'NoneType' object has no attribute 'index'
+Окружение: 
+Python 3.14.0
+pytest 9.0.1
+Серьезность: S2
+Приоритет: P1
+
+
+
+Баг-репорт №4
+Заголовок: При тестировании метод delete_symbol() вызывает AttributeError при передаче нестроковых аргументов вместо ожидаемого TypeError.
+Шаги:
+@pytest.mark.parametrize(
+    "string, symbol",
+    [
+        (None, "a"),          
+        (123, "a"),        
+        (None, None),         
+    ],
+)
+def test_string_utils_delete_symbol_invalid(string, symbol):
+    utils = StringUtils()
+    with pytest.raises(TypeError):
+        utils.delete_symbol(string, symbol)
+Ожидаемый результат: 
+Поднятие TypeError с чётким сообщением о том, что оба аргумента должны быть строками.
+Фактический результат:
+AttributeError: 'NoneType' object has no attribute 'index'
+AttributeError: 'int' object has no attribute 'index'
+Окружение: 
+Python 3.14.0
+pytest 9.0.1
+Серьезность: S2
+Приоритет: P1

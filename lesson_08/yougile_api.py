@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 import requests
 
 
+
 class YougileAPI:
     def __init__(self) -> None:
         base_url = os.environ.get("YOUGILE_BASE_URL")
@@ -15,6 +16,7 @@ class YougileAPI:
 
         self.base_url = base_url.rstrip("/")
         self.token = token.strip()
+        self._cached_user_id: Optional[str] = None
 
     def _headers(self) -> Dict[str, str]:
         return {
@@ -37,10 +39,8 @@ class YougileAPI:
             timeout=20,
         )
 
-    # ---------- helpers ----------
     @staticmethod
     def _extract_first_user_id(data: Any) -> str:
-        # case 1: list of users
         if (
             isinstance(data, list)
             and data
@@ -49,7 +49,6 @@ class YougileAPI:
         ):
             return str(data[0]["id"])
 
-        # case 2: dict with list inside (common paginated formats)
         if isinstance(data, dict):
             for key in ("content", "items", "data", "users", "results"):
                 value = data.get(key)
@@ -57,12 +56,10 @@ class YougileAPI:
                     isinstance(value, list)
                     and value
                     and isinstance(value[0], dict)
-                    and "id" in value[0]
+            and "id" in value[0]
                 ):
                     return str(value[0]["id"])
 
-            # case 3: dict of objects {something: {...}}
-            # take first dict value with id
             for value in data.values():
                 if isinstance(value, dict) and "id" in value:
                     return str(value["id"])
@@ -70,11 +67,14 @@ class YougileAPI:
         raise RuntimeError(f"Cannot extract user id from response: {data}")
 
     def get_any_user_id(self) -> str:
-        r = self._request("GET", "/api-v2/users")
-        r.raise_for_status()
-        return self._extract_first_user_id(r.json())
+        if self._cached_user_id is None:
+            r = self._request("GET", "/api-v2/users")
+            r.raise_for_status()
+            self._cached_user_id = self._extract_first_user_id(r.json())
+        return self._cached_user_id
 
     # ---------- projects ----------
+
     def create_project(self, title: str) -> requests.Response:
         user_id = self.get_any_user_id()
         payload = {"title": title, "users": {user_id: "admin"}}
@@ -89,3 +89,6 @@ class YougileAPI:
 
     def get_project(self, project_id: str) -> requests.Response:
         return self._request("GET", f"/api-v2/projects/{project_id}")
+
+    def delete_project(self, project_id: str) -> requests.Response:
+        return self._request("DELETE", f"/api-v2/projects/{project_id}")
